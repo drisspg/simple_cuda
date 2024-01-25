@@ -1,4 +1,4 @@
-#include "../src/include/utils.h"
+#include "src/include/utils.h"
 // these are just for timing measurments
 #include <time.h>
 

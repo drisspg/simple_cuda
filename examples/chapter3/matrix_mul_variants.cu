@@ -1,5 +1,5 @@
 
-#include "../src/include/utils.h"
+#include "src/include/utils.h"
 #include <cmath>
 #include <ranges>
 #include <thrust/device_vector.h>

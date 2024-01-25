@@ -1,3 +1,4 @@
+.cache
 *.i
 *.ii
 *.gpu

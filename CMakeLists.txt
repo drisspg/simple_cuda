@@ -27,7 +27,7 @@ set(EXTRA_CUDA_FLAGS "")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # Build the examples
-file(GLOB EXAMPLE_SOURCES examples/*.cu)
+file(GLOB_RECURSE EXAMPLE_SOURCES examples/*.cu)
 foreach(EXAMPLE_SOURCE ${EXAMPLE_SOURCES})
     get_filename_component(EXAMPLE_NAME ${EXAMPLE_SOURCE} NAME_WE)
     add_executable(${EXAMPLE_NAME} ${EXAMPLE_SOURCE})
