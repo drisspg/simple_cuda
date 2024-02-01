@@ -1,4 +1,4 @@
-
+#include <fmt/core.h>
 #include "src/include/utils.h"
 #include <ranges>
 #include <thrust/device_vector.h>
@@ -55,9 +55,9 @@ void Test(KernelFunc func, const int matrix_height, const int vector_height,
   for (const int row : std::views::iota(0, vector_height)) {
     const auto index = row;
     if (host_c_ptr[index] != anwser) {
-      std::cout << "houston we have a problem!\n";
-      std::cout << "At (" << row << "," << 1
-                << ") found value: " << host_c_ptr[index] << std::endl;
+      std::string error_string = "Houston we have a problem!\n";
+      error_string += fmt::format("At ({},{}) found value: {} instead of {}!\n", row, 1, host_c_ptr[index], anwser);
+      std::cout<<error_string;
       exit(1);
     }
   }

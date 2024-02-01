@@ -15,6 +15,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # # Add include directories to the library
 # target_include_directories(SimpleCudaLib PUBLIC src/include)
 
+# Assuming your CMakeLists.txt is in the root of your project
+# Add fmtlib
+add_subdirectory(third_party/fmt)
+
 
 # Set the C++ standard for all targets
 set(CMAKE_CXX_STANDARD 20)
@@ -42,6 +46,8 @@ foreach(EXAMPLE_SOURCE ${EXAMPLE_SOURCES})
     # Include header utils
     # This is gross but makes clangd work, I am sure is brittle but w.e for now
     target_include_directories(${EXAMPLE_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+    target_link_libraries(${EXAMPLE_NAME} PRIVATE fmt::fmt)
 
     # Link the library to the target
     # target_link_libraries(${EXAMPLE_NAME} SimpleCudaLib)

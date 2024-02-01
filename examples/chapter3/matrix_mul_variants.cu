@@ -5,6 +5,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/fill.h>
 #include <thrust/host_vector.h>
+#include <fmt/core.h>
 
 using KernelFunc = void (*)(float *, float *, float *, int);
 
@@ -93,9 +94,9 @@ void Test(KernelFunc func, const int width, dim3 grid, dim3 block) {
     for (const int col : std::views::iota(0, width)) {
       const auto index = row * width + col;
       if (host_c_ptr[index] != 2 * width) {
-        std::cout << "houston we have a problem!\n";
-        std::cout << "At (" << row << "," << col
-                  << ") found value: " << host_c_ptr[index] << std::endl;
+        std::string error_string = "Houston we have a problem!\n";
+        error_string += fmt::format("At ({},{}) found value: {} instead of {}!\n", row, 1, host_c_ptr[index], 2 * width);
+        std::cout<<error_string;
         exit(1);
       }
     }
