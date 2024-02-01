@@ -11,7 +11,6 @@
     }                                                                          \
   } while (0)
 
-
-template <typename T, typename Y> T ceil_div(T a, Y b) {
+template <typename T, typename Y> T __host__ __device__ ceil_div(T a, Y b) {
   return a / b + (a % b != 0);
 }

@@ -26,6 +26,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # CUDA Flags
 set(EXTRA_CUDA_FLAGS "")
+# Lil noisy but helpful
+# set(EXTRA_CUDA_FLAGS "-Xptxas -v")
+
 
 # Set the output directory for the binaries
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -40,8 +43,11 @@ foreach(EXAMPLE_SOURCE ${EXAMPLE_SOURCES})
     set_target_properties(${EXAMPLE_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
     set_target_properties(${EXAMPLE_NAME} PROPERTIES CUDA_ARCHITECTURES 90)
 
-    # Add  Extra CUDA flags
-    target_compile_options(${EXAMPLE_NAME} PRIVATE ${EXTRA_CUDA_FLAGS})
+    # Convert the flags string into a list of flags
+    separate_arguments(EXTRA_CUDA_FLAGS_LIST UNIX_COMMAND "${EXTRA_CUDA_FLAGS}")
+
+    # Add Extra CUDA flags
+    target_compile_options(${EXAMPLE_NAME} PRIVATE ${EXTRA_CUDA_FLAGS_LIST})
 
     # Include header utils
     # This is gross but makes clangd work, I am sure is brittle but w.e for now
