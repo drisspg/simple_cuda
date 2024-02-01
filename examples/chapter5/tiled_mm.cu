@@ -1,6 +1,7 @@
 
 #include "src/include/utils.h"
 #include <cmath>
+#include <fmt/core.h>
 #include <ranges>
 #include <thrust/device_vector.h>
 #include <thrust/fill.h>
@@ -13,6 +14,11 @@ struct Strides {
   int col_stride;
 };
 
+/**
+ * This function will fill the shared memory tile with values from M and N matrices
+ *
+ * The M tile slides along the cols and the N tile slides down rows
+ */
 template <int tile_size>
 __device__ void fill_tiles(float *m_tile, float *n_tile, float *M, float *N,
                            const int tile_idx, const int row, const int col,
@@ -20,15 +26,18 @@ __device__ void fill_tiles(float *m_tile, float *n_tile, float *M, float *N,
   const auto row_stride = stride.row_stride;
   const auto col_stride = stride.col_stride;
 
-  const int m_idx = row * row_stride + tile_idx * tile_size * col_stride +
-                    threadIdx.x * col_stride;
-  const int n_idx = col * col_stride + tile_idx * tile_size * row_stride +
-                    threadIdx.y * row_stride;
+  const int tile_offset = tile_idx * tile_size;
+  const int global_m_col = tile_offset + threadIdx.x;
+  const int global_n_row = tile_offset + threadIdx.y;
+
+  const int m_idx = row * row_stride + global_m_col * col_stride;
+  const int n_idx = col * col_stride + global_n_row * row_stride;
 
   m_tile[threadIdx.y * tile_size + threadIdx.x] =
-      m_idx < width * width ? M[m_idx] : 0.0;
+      global_m_col < width ? M[m_idx] : 0.0;
   n_tile[threadIdx.y * tile_size + threadIdx.x] =
-      n_idx < width * width ? N[n_idx] : 0.0;
+      global_n_row < width ? N[n_idx] : 0.0;
+
 }
 
 template <int tile_size>
@@ -37,8 +46,6 @@ __global__ void MatrixMulKernelTiled(float *M, float *N, float *P, int width) {
   const Strides matrix_strides{width, 1};
   const int row = blockIdx.y * blockDim.y + threadIdx.y;
   const int col = blockIdx.x * blockDim.x + threadIdx.x;
-  if (row > width || col > width)
-    return;
 
   __shared__ float M_tile[tile_size * tile_size];
   __shared__ float N_tile[tile_size * tile_size];
@@ -56,10 +63,12 @@ __global__ void MatrixMulKernelTiled(float *M, float *N, float *P, int width) {
     }
     __syncthreads();
   }
-  const int out_idx =
-      row * matrix_strides.row_stride + col * matrix_strides.col_stride;
+  if (row < width and col < width) {
+    const int out_idx =
+        row * matrix_strides.row_stride + col * matrix_strides.col_stride;
 
-  P[out_idx] = accumulator;
+    P[out_idx] = accumulator;
+  }
 }
 
 void Test(KernelFunc func, const int width, dim3 grid, dim3 block) {
@@ -83,13 +92,16 @@ void Test(KernelFunc func, const int width, dim3 grid, dim3 block) {
 
   float *host_c_ptr = thrust::raw_pointer_cast(host_c.data());
 
+  const float anwser = 2 * width;
   for (const int row : std::views::iota(0, width)) {
     for (const int col : std::views::iota(0, width)) {
       const auto index = row * width + col;
-      if (host_c_ptr[index] != 2 * width) {
-        std::cout << "houston we have a problem!\n";
-        std::cout << "At (" << row << "," << col
-                  << ") found value: " << host_c_ptr[index] << std::endl;
+      if (host_c_ptr[index] != anwser) {
+        std::string error_string = "Houston we have a problem!\n";
+        error_string +=
+            fmt::format("At ({},{}) found value: {} instead of {}!\n", row, 1,
+                        host_c_ptr[index], anwser);
+        std::cout << error_string;
         exit(1);
       }
     }
@@ -99,7 +111,7 @@ void Test(KernelFunc func, const int width, dim3 grid, dim3 block) {
 
 int main() {
   // Standard Matmul
-  constexpr int width = 8192;
+  constexpr int width = 8001;
   constexpr int block_size = 32;
 
   dim3 grid(ceil_div(width, block_size), ceil_div(width, block_size));
@@ -108,6 +120,6 @@ int main() {
   Test(MatrixMulKernelTiled<block_size>, width, grid, block);
 
   // profile the relevant kernels:
-  // ncu -k "regex:Matrix" ./bin/matrix_mul_variants
+  // ncu -k "regex:Matrix" ./bin/tile_mm
   return 0;
 }
