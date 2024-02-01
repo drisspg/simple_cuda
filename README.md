@@ -22,10 +22,10 @@ The examples will go into examples/. I plan on using the CMakeLists.txt in the r
 mkdir build && cd build
 
 # Configure the build
-cmake ..
+cmake -DCMAKE_BUILD_TYPE=RelWithDebugInfo -G Ninja ..
 
 # Build the examples
-make
+ninja
 
 ```
 
