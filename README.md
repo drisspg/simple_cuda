@@ -47,3 +47,21 @@ etc..
 
 This will build all the examples and put the executables in build/bin.
 
+### Example E2E run for the tiled_mm example in chapter5
+```Shell
+
+cd build
+
+cmake -DCMAKE_BUILD_TYPE=RelWithDebugInfo -G Ninja ..
+
+./bin/tiled_mm
+
+# Profie with NCU
+ncu -k "regex:Matrix" ./bin/tiled_mm  
+```
+
+### Dependencies 
+- Cmake
+- Ninja
+- Cuda
+- c++=std20 compilier
