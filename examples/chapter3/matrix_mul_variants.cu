@@ -8,6 +8,7 @@
 #include <fmt/core.h>
 
 using KernelFunc = void (*)(float *, float *, float *, int);
+using namespace simple_cuda;
 
 __global__ void MatrixMulKernel(float *M, float *N, float *P, int Width) {
   // Two sqaure matrices and performs matmul
