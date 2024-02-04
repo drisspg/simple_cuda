@@ -56,10 +56,10 @@ foreach(EXAMPLE_SOURCE ${EXAMPLE_SOURCES})
     # This is gross but makes clangd work, I am sure is brittle but w.e for now
     target_include_directories(${EXAMPLE_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-    # Third party links
-    target_link_libraries(${EXAMPLE_NAME} PRIVATE fmt::fmt)
-
     # Link the library to the target
     target_link_libraries(${EXAMPLE_NAME} PRIVATE SimpleCudaLib)
+
+    # Third party links
+    target_link_libraries(${EXAMPLE_NAME} PRIVATE fmt::fmt)
 
 endforeach()

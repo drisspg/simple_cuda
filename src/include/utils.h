@@ -1,6 +1,7 @@
 #include <functional>
 #include <stdio.h>
 
+
 namespace simple_cuda {
 
 // error checking macro
@@ -18,7 +19,11 @@ namespace simple_cuda {
 template <typename T, typename Y> T __host__ __device__ ceil_div(T a, Y b) {
   return a / b + (a % b != 0);
 }
+// Functions whose implementation is in the .cu file
+extern "C" {
 
 float kernel_time(std::function<void()> kernelLauncher);
+
+} // extern "C"
 
 } // namespace simple_cuda
