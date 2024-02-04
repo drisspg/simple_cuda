@@ -6,6 +6,7 @@
 #include <thrust/host_vector.h>
 
 using KernelFunc = void (*)(float *, float *, float *, int);
+using namespace simple_cuda;
 
 __global__ void MatrixVectorKernel(float *Matrix, float *Vector, float *Output,
                                    int vector_height) {

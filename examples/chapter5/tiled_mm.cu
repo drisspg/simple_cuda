@@ -8,7 +8,7 @@
 #include <thrust/host_vector.h>
 
 using KernelFunc = void (*)(float *, float *, float *, int);
-
+using namespace simple_cuda;
 struct Strides {
   int row_stride;
   int col_stride;

@@ -7,6 +7,8 @@ const int block_size = 16; // CUDA maximum is 1024 *total* threads in block
 const float A_val = 1.0f;
 const float B_val = 2.0f;
 
+using namespace simple_cuda;
+
 // matrix multiply (naive) kernel: C = A * B
 __global__ void mmul(const float *A, const float *B, float *C, int ds) {
 

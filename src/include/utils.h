@@ -1,4 +1,8 @@
+#include <functional>
 #include <stdio.h>
+
+namespace simple_cuda {
+
 // error checking macro
 #define cudaCheckErrors(msg)                                                   \
   do {                                                                         \
@@ -14,3 +18,7 @@
 template <typename T, typename Y> T __host__ __device__ ceil_div(T a, Y b) {
   return a / b + (a % b != 0);
 }
+
+float kernel_time(std::function<void()> kernelLauncher);
+
+} // namespace simple_cuda
