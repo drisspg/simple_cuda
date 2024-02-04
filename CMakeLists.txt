@@ -1,6 +1,9 @@
 
 cmake_minimum_required(VERSION 3.26 FATAL_ERROR)
 project(simple_cuda LANGUAGES CXX CUDA)
+# Set the C++ standard for all targets
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Enable better clangd support
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -17,17 +20,12 @@ add_library(SimpleCudaLib STATIC
 )
 
 set_target_properties(SimpleCudaLib PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-target_compile_features(SimpleCudaLib PUBLIC cxx_std_20)
 
 # Add include directories to the library
 target_include_directories(SimpleCudaLib PUBLIC src/include)
 
 # Add fmtlib
 add_subdirectory(third_party/fmt)
-
-# Set the C++ standard for all targets
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # CUDA Flags
 set(EXTRA_CUDA_FLAGS "")
