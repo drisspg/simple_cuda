@@ -1,5 +1,8 @@
 # Simple Cuda
 
+![surfing](https://github.com/drisspg/simple_cuda/assets/32754868/4f8d27e2-dcc2-40a3-9aff-a814340878e4)
+
+
 Small little project to track exercises as I go through the *Programming Massively Parallel Processors* book.
 
 I also want to get some more familiarity with using Cmake from scratch, I wouldn't use any of this code its mostly for learning.
