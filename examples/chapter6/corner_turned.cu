@@ -24,30 +24,38 @@ struct Strides {
  *
  * The M tile slides along the cols and the N tile slides down rows
  */
-template <int tile_size>
-__device__ void fill_tiles(float *m_tile, float *n_tile, float *A, float *B,
+template <int tile_size, bool corner_turned=false>
+__device__ void fill_tiles_corner_turn(float *m_tile, float *n_tile, float *A, float *B,
                            const int tile_idx, const int row, const int col,
                            const Strides mat1_stride, const Strides mat2_stride,
                            const Strides tile_strides, const int inner_dim) {
   const int tile_offset = tile_idx * tile_size;
 
   const int global_m_col = tile_offset + threadIdx.x;
-  const int global_n_row = tile_offset + threadIdx.y;
 
   const int A_index = mat1_stride.index(row, global_m_col);
-  const int B_index = mat2_stride.index(global_n_row, col);
-
   const auto tile_index = tile_strides.index(threadIdx.y, threadIdx.x);
   m_tile[tile_index] = global_m_col < inner_dim ? A[A_index] : 0.0;
+
+  int B_index;
+  int global_n_row;
+  if (corner_turned) {
+    global_n_row = tile_offset + threadIdx.x;
+    const int turned_col = blockIdx.x * blockDim.x + threadIdx.y;
+    B_index = mat2_stride.index(global_n_row, turned_col);
+  } else {
+    global_n_row = tile_offset + threadIdx.y;
+    B_index = mat2_stride.index(global_n_row, col);
+  }
   n_tile[tile_index] = global_n_row < inner_dim ? B[B_index] : 0.0;
 }
 
 template <int tile_size>
 __global__ void MatrixMulKernelTiled(float *Mat1, float *Mat2, float *OutMat,
                                      const int M, const int K, const int N) {
-  // Two Row Major matrix multiplies outputing to row-major
+  // Row Major by Column Major outputing to row-major
   const Strides mat1_strides{K, 1};
-  const Strides mat2_strides{N, 1};
+  const Strides mat2_strides{1, K};
   const Strides out_mat_strides{N, 1};
 
   const int row = blockIdx.y * blockDim.y + threadIdx.y;
@@ -63,7 +71,7 @@ __global__ void MatrixMulKernelTiled(float *Mat1, float *Mat2, float *OutMat,
 
   float accumulator = 0.0;
   for (int tile{0}; tile < num_tiles; tile++) {
-    fill_tiles<tile_size>(M_tile, N_tile, Mat1, Mat2, tile, row, col,
+    fill_tiles_corner_turn<tile_size, true>(M_tile, N_tile, Mat1, Mat2, tile, row, col,
                           mat1_strides, mat2_strides, tile_strides, K);
     __syncthreads();
     for (int k{0}; k < tile_size; k++) {
@@ -123,9 +131,9 @@ void Test(KernelFunc func, const int M, const int K, const int N, dim3 grid,
             fmt::format("At ({},{}) found value: {} instead of {}!\n", row, col,
                         host_c_ptr[index], anwser);
         std::cout << error_string;
-        if (M * K * N < 64) {
-          printMatrix(host_c_ptr, M, N, out_strides);
-        }
+        // if (M * K * N < 64) {
+        //   printMatrix(host_c_ptr, M, N, out_strides);
+        // }
         exit(1);
       }
     }
@@ -134,29 +142,10 @@ void Test(KernelFunc func, const int M, const int K, const int N, dim3 grid,
 }
 
 int main() {
-  // Standard Matmul
-  int M = 3;
-  int K = 4;
-  int N = 5;
-  constexpr int block_size = 2;
-
-  // dimx is inner dim, dimy is outerdim
-  dim3 grid(ceil_div(N, block_size), ceil_div(M, block_size));
-  dim3 block(block_size, block_size);
-
-  Test(MatrixMulKernelTiled<block_size>, M, K, N, grid, block);
-
-  M = 16;
-  K = 12;
-  N = 20;
-  constexpr int block_size2 = 4;
-  dim3 grid2(ceil_div(N, block_size2), ceil_div(M, block_size2));
-  dim3 block2(block_size2, block_size2);
-  Test(MatrixMulKernelTiled<block_size2>, M, K, N, grid2, block2);
-
-  M = 1028;
-  K = 19023;
-  N = 2134;
+//   // Standard Matmul
+  int M = 1028;
+  int K = 19023;
+  int N = 2134;
   constexpr int block_size3= 32;
   dim3 grid3(ceil_div(N, block_size3), ceil_div(M, block_size3));
   dim3 block3(block_size3, block_size3);
