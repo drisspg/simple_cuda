@@ -98,23 +98,30 @@ template <typename T> T cpp_kernel(T const &input, T const &filter) {
 
 void Test(KernelFunc func, const int vec_length, const int filter_size,
           dim3 grid, dim3 block) {
-  device_vec input_vec(vec_length);
-  device_vec output_vec(vec_length);
-  device_vec filter(filter_size);
+  host_vec input_vec(vec_length);
+  host_vec output_vec(vec_length);
+  host_vec filter(filter_size);
 
-  thrust::fill(input_vec.begin(), input_vec.end(), 1);
-  thrust::fill(output_vec.begin(), output_vec.end(), 0);
-  thrust::fill(filter.begin(), filter.end(), 2);
+  // fill_random(input_vec);
+  // fill_random(filter);
 
-  float *input_vec_ptr = thrust::raw_pointer_cast(input_vec.data());
-  float *output_vec_ptr = thrust::raw_pointer_cast(output_vec.data());
-  float *filter_ptr = thrust::raw_pointer_cast(filter.data());
+  std::fill(input_vec.begin(), input_vec.end(), 1);
+  std::fill(output_vec.begin(), output_vec.end(), 0);
+  std::fill(filter.begin(), filter.end(), 2);
+
+  device_vec input_vec_d(input_vec);
+  device_vec output_vec_d(output_vec);
+  device_vec filter_d(filter);
+
+  float *input_vec_ptr = thrust::raw_pointer_cast(input_vec_d.data());
+  float *output_vec_ptr = thrust::raw_pointer_cast(output_vec_d.data());
+  float *filter_ptr = thrust::raw_pointer_cast(filter_d.data());
 
   func<<<grid, block>>>(input_vec_ptr, filter_ptr, output_vec_ptr, vec_length);
   cudaCheckErrors("kernel launch failure");
   cudaDeviceSynchronize();
 
-  auto host_output = host_vec(output_vec);
+  auto host_output = host_vec(output_vec_d);
   float *host_output_ptr = thrust::raw_pointer_cast(host_output.data());
 
   const auto cpp_anwser = cpp_kernel(host_vec(input_vec), host_vec(filter));
