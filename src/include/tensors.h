@@ -9,6 +9,7 @@ namespace simple_cuda {
 template <typename T, typename ExtentType> struct DeviceTensor;
 
 template <int num_dims> struct Extent {
+  // Constructors
   Extent() = default;
   Extent(std::array<size_t, num_dims> size) : size_(size) {
     size_t stride = 1;
@@ -16,13 +17,18 @@ template <int num_dims> struct Extent {
       stride_[i] = stride;
       stride *= size[i];
     }
+    numel_ = compute_numel();
   }
+
+  // Members
   std::array<size_t, num_dims> size_;
   std::array<size_t, num_dims> stride_;
-
   static constexpr int n_dim = num_dims;
+  size_t numel_;
 
-  size_t numel() const {
+  // Methods
+  size_t numel() const { return numel_; }
+  size_t compute_numel() const {
     size_t numel = 1;
     for (int i = 0; i < num_dims; i++) {
       numel *= size_[i];
@@ -50,17 +56,11 @@ template <typename T, typename ExtentType> struct HostTensor {
     data_ = thrust::host_vector<float>(size);
   }
   HostTensor(ExtentType extent) : extent_(extent) {
-    size_t size = 1;
-    for (int i = 0; i < ExtentType::n_dim; i++) {
-      size *= extent.size_[i];
-    }
-    data_ = thrust::host_vector<float>(size);
+    data_ = thrust::host_vector<float>(extent.numel());
   }
 
-  HostTensor(const DeviceTensor<T, ExtentType> &device_tensor) {
-    extent_ = device_tensor.extent_;
-    data_ = device_tensor.data_;
-  }
+  HostTensor(const DeviceTensor<T, ExtentType> &device_tensor)
+      : extent_(device_tensor.extent_), data_(device_tensor.data_) {}
 
   DeviceTensor<T, ExtentType> to_device() {
     return DeviceTensor<T, ExtentType>(*this);
@@ -77,17 +77,11 @@ template <typename T, typename ExtentType> struct DeviceTensor {
     data_ = thrust::device_vector<float>(size);
   }
   DeviceTensor(ExtentType extent) : extent_(extent) {
-    size_t size = 1;
-    for (int i = 0; i < ExtentType::n_dim; i++) {
-      size *= extent.size_[i];
-    }
-    data_ = thrust::device_vector<float>(size);
+    data_ = thrust::device_vector<float>(extent.numel());
   }
 
-  DeviceTensor(const HostTensor<T, ExtentType> &host_tensor) {
-    extent_ = host_tensor.extent_;
-    data_ = host_tensor.data_;
-  }
+  DeviceTensor(const HostTensor<T, ExtentType> &host_tensor)
+      : extent_(host_tensor.extent_), data_(host_tensor.data_) {}
 
   HostTensor<T, ExtentType> to_host() {
     return HostTensor<T, ExtentType>(*this);
