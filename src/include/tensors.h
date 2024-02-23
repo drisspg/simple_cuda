@@ -27,6 +27,12 @@ template <int num_dims> struct Extent {
   size_t numel_;
 
   // Methods
+  void transpose(size_t dim1, size_t dim2) {
+    assert((dim1 < num_dims && dim2 < num_dims) &&
+           "Dimensions must be less than n_dim");
+    std::swap(size_[dim1], size_[dim2]);
+    std::swap(stride_[dim1], stride_[dim2]);
+  }
   size_t numel() const { return numel_; }
   size_t compute_numel() const {
     size_t numel = 1;
