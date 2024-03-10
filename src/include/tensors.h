@@ -2,6 +2,8 @@
 #include <array>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#include <fmt/core.h>
+#include <fmt/ranges.h>
 
 namespace simple_cuda {
 
@@ -32,6 +34,11 @@ template <int num_dims> struct Extent {
            "Dimensions must be less than n_dim");
     std::swap(size_[dim1], size_[dim2]);
     std::swap(stride_[dim1], stride_[dim2]);
+  }
+  template<size_t dim>
+  constexpr size_t size() {
+    static_assert(dim < num_dims, "Dimension must be less than n_dim");
+    return size_[dim];
   }
   size_t numel() const { return numel_; }
   size_t compute_numel() const {

@@ -11,24 +11,39 @@
 #include <thrust/host_vector.h>
 
 using namespace simple_cuda;
-using KernelFunc = void (*)(const float *, const float *, float *, int);
+using KernelFunc = void (*)(const float *, const float *, float *, const int,
+                            const int);
 
 using two_d = Extent<2>;
 
 template <int tile_size, int filter_radius>
 __global__ void Conv2D(const float *input, const float *filter, float *output,
-                       const int numel) {
-  const int global_idx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (global_idx >= numel) {
+                       const int n_rows, const int n_cols) {
+  const int global_col_idx = blockIdx.x * blockDim.x + threadIdx.x;
+  const int global_row_idx = blockIdx.y * blockDim.y + threadIdx.y;
+  const int filter_row_stride = 2 * filter_radius;
+  const int row_stride = n_cols;
+  const int col_stride = 1;
+  const int global_idx =
+      global_row_idx * row_stride + global_col_idx * col_stride;
+  if (global_row_idx >= n_rows || global_col_idx >= n_cols) {
     // Early return for invalid output elements
     return;
   }
 
   float accumulator = 0.0;
 #pragma unroll
-  for (int j{-filter_radius}; j <= filter_radius; j++) {
-    if (0 < global_idx + j < numel) {
-      accumulator += input[global_idx + j] * filter[j + filter_radius];
+  for (int k{-filter_radius}; k < filter_radius; k++) {
+    for (int l{-filter_radius}; l < filter_radius; l++) {
+      const int effective_row = global_row_idx + k;
+      const int effective_col = global_col_idx + l;
+      if (0 <= effective_row && effective_row < n_rows && 0 <= effective_col &&
+          effective_col < n_cols) {
+        accumulator +=
+            input[effective_row * row_stride + effective_col * col_stride] *
+            filter[(k + filter_radius) * filter_row_stride +
+                   (l + filter_radius) * 1];
+      }
     }
   }
   // We early returned so we can write freely
@@ -54,42 +69,28 @@ __device__ void fill_tile(const float *input, float *input_tile,
   }
 }
 
-template <int tile_size, int filter_radius>
-__global__ void Conv1D_shmem(const float *input, const float *filter,
-                             float *output, const int input_size) {
-  const int global_idx = blockIdx.x * blockDim.x + threadIdx.x;
-  // We stored the the tile_size which is equivelant to block size + the filter
-  // size for the left and right boundaries
-  __shared__ float input_tile[tile_size + (2 * filter_radius)];
-
-  fill_tile<tile_size, filter_radius>(input, input_tile, global_idx,
-                                      input_size);
-  __syncthreads();
-  float accumulator = 0.0;
-#pragma unroll
-  for (int j{-filter_radius}; j <= filter_radius; j++) {
-    const int tile_idx = filter_radius + threadIdx.x + j;
-    accumulator += input_tile[tile_idx] * filter[j + filter_radius];
-  }
-
-  if (global_idx < input_size) {
-    output[global_idx] = accumulator;
-  }
-}
-
 template <typename T>
 T cpp_kernel(T const &input, T const &filter, const int n_rows,
              const int n_cols, const int filter_radius) {
   std::vector<float> output;
   output.reserve(input.size());
+  const int filter_row_stride = 2 * filter_radius;
+  const int row_stride = n_cols;
+  const int col_stride = 1;
   for (int i{0}; i < n_rows; i++) {
     for (int j{0}; j < n_cols; j++) {
       float accum = 0.0;
-      for (int k{-filter_radius}; k <= filter_radius; k++) {
-        for (int l{-filter_radius}; l <= filter_radius; l++) {
-          // if (0 <= i + j && i + j < n_rows && 0 <= j + l && j + l < n_cols) {
-            // accum += input[i + j] * filter[j + kernel_width];
-          // }
+      for (int k{-filter_radius}; k < filter_radius; k++) {
+        for (int l{-filter_radius}; l < filter_radius; l++) {
+          const int effective_row = i + k;
+          const int effective_col = j + l;
+          if (0 <= effective_row && effective_row < n_rows &&
+              0 <= effective_col && effective_col < n_cols) {
+            accum +=
+                input[effective_row * row_stride + effective_col * col_stride] *
+                filter[(k + filter_radius) * filter_row_stride +
+                       (l + filter_radius)];
+          }
         }
       }
       output.emplace_back(accum);
@@ -102,7 +103,7 @@ T cpp_kernel(T const &input, T const &filter, const int n_rows,
 void Test(KernelFunc func, const size_t n_rows, const size_t n_cols,
           const size_t filter_radius, dim3 grid, dim3 block) {
   two_d tensor_extents({n_rows, n_cols});
-  two_d filter_extents({(2 * filter_radius) * (2 * filter_radius)});
+  two_d filter_extents({(2 * filter_radius), (2 * filter_radius)});
 
   HostTensor<float, two_d> input_vec(tensor_extents);
   HostTensor<float, two_d> output_vec(tensor_extents);
@@ -115,9 +116,11 @@ void Test(KernelFunc func, const size_t n_rows, const size_t n_cols,
   auto input_vec_d = input_vec.to_device();
   auto output_vec_d = output_vec.to_device();
   auto filter_d = filter.to_device();
+  cudaCheckErrors("Thrust host to device failed!");
 
   func<<<grid, block>>>(input_vec_d.data_ptr(), filter_d.data_ptr(),
-                        output_vec_d.data_ptr(), tensor_extents.numel());
+                        output_vec_d.data_ptr(), tensor_extents.size<0>(),
+                        tensor_extents.size<1>());
   cudaCheckErrors("kernel launch failure");
   cudaDeviceSynchronize();
 
@@ -134,7 +137,7 @@ void Test(KernelFunc func, const size_t n_rows, const size_t n_cols,
                                   idx, host_output_ptr[idx], cpp_anwser[idx]);
       std::cout << error_string;
 
-      if (tensor_extents.numel() <= 32) {
+      if (tensor_extents.numel() <= 100) {
         fmt::print("Good:{}\n", fmt::join(cpp_anwser, ", "));
         fmt::print("Bad:{}\n", fmt::join(host_output.data_, ", "));
       }
@@ -149,7 +152,7 @@ int main() {
   // Standard Matmul
   constexpr int num_rows = 256;
   constexpr int num_cols = 256;
-  constexpr int filter_radius = 3;
+  constexpr int filter_radius = 4;
   constexpr int block_size = 32;
 
   // dimx is inner dim, dimy is outerdim
@@ -159,11 +162,5 @@ int main() {
   Test(Conv2D<block_size, filter_radius>, num_rows, num_cols, filter_radius,
        grid, block);
 
-  // Test(Conv1D_shmem<block_size, filter_radius>, max_length, max_length,
-  // filter_radius, grid,
-  //      block);
-
-  // profile the relevant kernels:
-  // ncu -k "regex:Conv" ./bin/conv1d
   return 0;
 }
