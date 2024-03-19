@@ -16,7 +16,13 @@ jobs:
       image: nvidia/cuda:12.3.2-devel-ubuntu22.04
 
     steps:
-    - uses: actions/checkout@v3             
+    - uses: actions/checkout@v3   
+
+    - name: Install CMake
+      run: |
+        apt-get update
+        apt-get install -y cmake
+        apt-get install -y ninja
 
     # Note: The CUDA toolkit is already included in the container image, so we don't need the Jimver/cuda-toolkit action anymore.
 
