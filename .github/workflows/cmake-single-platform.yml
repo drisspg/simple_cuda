@@ -14,9 +14,17 @@ jobs:
     runs-on: ubuntu-latest
     container: 
       image: nvidia/cuda:12.3.2-devel-ubuntu22.04
-
+    
     steps:
-    - uses: actions/checkout@v3   
+    - uses: actions/checkout@v3
+      with:
+        # Fetches all history for all tags and branches, necessary for a complete submodule update
+        fetch-depth: 0
+
+    - name: Initialize and Update Git Submodules
+      run: |
+        git submodule sync
+        git submodule update --init --recursive
 
     - name: Install CMake
       run: |
