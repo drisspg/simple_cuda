@@ -18,8 +18,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
       with:
-        # Fetches all history for all tags and branches, necessary for a complete submodule update
         fetch-depth: 0
+        submodules: 'recursive'
+
 
     - name: Install CMake and git
       run: |
@@ -29,6 +30,7 @@ jobs:
 
     - name: Initialize and Update Git Submodules
       run: |
+        cd $GITHUB_WORKSPACE
         git submodule sync
         git submodule update --init --recursive
 
