@@ -28,7 +28,7 @@ target_include_directories(SimpleCudaLib PUBLIC src/include)
 add_subdirectory(third_party/fmt)
 
 # CUDA Flags
-set(EXTRA_CUDA_FLAGS "")
+set(EXTRA_CUDA_FLAGS "${EXTRA_CUDA_FLAGS} -lineinfo")
 option (SHOW_PTXAS_INFO "Show ptxas info" OFF)
 if(SHOW_PTXAS_INFO)
     set(EXTRA_CUDA_FLAGS "${EXTRA_CUDA_FLAGS} -Xptxas -v")
