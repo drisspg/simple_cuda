@@ -24,7 +24,7 @@ template <typename T, typename Y> T __host__ __device__ ceil_div(T a, Y b) {
 
 float kernel_time(std::function<void()> kernelLauncher);
 
-template <typename T> void fill_random(T input) {
+template <typename T> void fill_random(T& input) {
   // First create an instance of an engine.
   std::random_device rnd_device;
   // Specify the engine and distribution.
