@@ -29,7 +29,7 @@ template <typename T> void fill_random(T& input) {
   std::random_device rnd_device;
   // Specify the engine and distribution.
   std::mt19937 mersenne_engine{rnd_device()}; // Generates random integers
-  std::normal_distribution<float> dist{2, 1};
+  std::normal_distribution<float> dist{0, 1};
   auto gen = [&dist, &mersenne_engine]() { return dist(mersenne_engine); };
 
   std::generate(input.begin(), input.end(), gen);

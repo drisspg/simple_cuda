@@ -12,20 +12,23 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: 
+    container:
       image: nvidia/cuda:12.3.2-devel-ubuntu22.04
-    
+
     steps:
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0
         submodules: 'recursive'
 
+   - name: Set up Git
+      uses: actions/setup-git@v1
+      with:
+        git-version: '2.30.0' # Specify the version of Git you need
 
     - name: Install CMake and git
       run: |
         apt-get update
-        apt-get install -y git
         apt-get install -y cmake
 
     - name: Initialize and Update Git Submodules

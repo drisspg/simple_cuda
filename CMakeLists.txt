@@ -27,8 +27,15 @@ target_include_directories(SimpleCudaLib PUBLIC src/include)
 # Add fmtlib
 add_subdirectory(third_party/fmt)
 
-# CUDA Flags
-set(EXTRA_CUDA_FLAGS "${EXTRA_CUDA_FLAGS} -lineinfo")
+# Check if building in Debug mode
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  # Add debug-specific flags
+  set(EXTRA_CUDA_FLAGS "${EXTRA_CUDA_FLAGS} -G -g")
+else()
+  # Add line info flag only if not building in Debug mode
+  set(EXTRA_CUDA_FLAGS "${EXTRA_CUDA_FLAGS} -lineinfo")
+endif()
+
 option (SHOW_PTXAS_INFO "Show ptxas info" OFF)
 if(SHOW_PTXAS_INFO)
     set(EXTRA_CUDA_FLAGS "${EXTRA_CUDA_FLAGS} -Xptxas -v")
@@ -45,11 +52,6 @@ foreach(EXAMPLE_SOURCE ${EXAMPLE_SOURCES})
     # CUDA properties provided by CMAKE
     set_target_properties(${EXAMPLE_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
     set_target_properties(${EXAMPLE_NAME} PROPERTIES CUDA_ARCHITECTURES 90a)
-
-    # Check if building in Debug mode and add -G flag
-    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-      set(EXTRA_CUDA_FLAGS "${EXTRA_CUDA_FLAGS} -G -g")
-    endif()
 
     # Convert the flags string into a list of flags
     separate_arguments(EXTRA_CUDA_FLAGS_LIST UNIX_COMMAND "${EXTRA_CUDA_FLAGS}")
