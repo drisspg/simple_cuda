@@ -156,7 +156,7 @@ int main() {
   constexpr int block_size = 32;
 
   // dimx is inner dim, dimy is outerdim
-  dim3 grid(ceil_div(num_rows, block_size), ceil_div(num_cols, block_size));
+  dim3 grid(ceil_div(num_cols, block_size), ceil_div(num_rows, block_size));
   dim3 block(block_size, block_size);
 
   Test(Conv2D<block_size, filter_radius>, num_rows, num_cols, filter_radius,
