@@ -1,5 +1,3 @@
-
-#include <cmath>
 #include <cooperative_groups.h>
 #include "src/include/utils.h"
 #include <fmt/core.h>
@@ -46,8 +44,13 @@ __global__ void sum_kernel_block(int *sum, int *input, int n) {
 int main() {
 
   int n = 1 << 24;
-  int blockSize = 256;
-  int nBlocks = simple_cuda::ceil_div(n, blockSize*16);
+  int blockSize = 128;
+  int numSMs;
+  cudaDeviceGetAttribute(&numSMs, cudaDevAttrMultiProcessorCount, 0);
+  constexpr int coarse_factor = 32;
+  //  manual Grid_size
+  int nBlocks_manual = 64 * numSMs;
+  int nBlocks = simple_cuda::ceil_div(n, blockSize *  coarse_factor * 2);
   int sharedBytes = blockSize * sizeof(int);
 
   int *sum, *data;
@@ -56,7 +59,7 @@ int main() {
   std::fill_n(data, n, 1); // initialize data
   cudaMemset(sum, 0, sizeof(int));
 
-  sum_kernel_block<<<nBlocks, blockSize, sharedBytes>>>(sum, data, n);
+  sum_kernel_block<<<nBlocks_manual, blockSize, sharedBytes>>>(sum, data, n);
   cudaDeviceSynchronize();
   fmt::print("The array is sized {}\n", n);
   fmt::print("Sum is equal to {}\n", *sum);
