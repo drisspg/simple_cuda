@@ -1,4 +1,3 @@
-
 cmake_minimum_required(VERSION 3.22 FATAL_ERROR)
 project(simple_cuda LANGUAGES CXX CUDA)
 # Set the C++ standard for all targets
@@ -36,6 +35,9 @@ else()
   set(EXTRA_CUDA_FLAGS "${EXTRA_CUDA_FLAGS} -lineinfo")
 endif()
 
+# Add relaxed constexpr flag to fix the warning
+set(EXTRA_CUDA_FLAGS "${EXTRA_CUDA_FLAGS} --expt-relaxed-constexpr")
+
 option (SHOW_PTXAS_INFO "Show ptxas info" OFF)
 if(SHOW_PTXAS_INFO)
     set(EXTRA_CUDA_FLAGS "${EXTRA_CUDA_FLAGS} -Xptxas -v")
@@ -62,6 +64,15 @@ foreach(EXAMPLE_SOURCE ${EXAMPLE_SOURCES})
     # Include header utils
     # This is gross but makes clangd work, I am sure is brittle but w.e for now
     target_include_directories(${EXAMPLE_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+    # Include CUTLASS headers for each example
+    target_include_directories(${EXAMPLE_NAME} PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/third_party/cutlass/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/third_party/cutlass/tools/util/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/third_party/cutlass/tools/library/include
+        ${CUDNN_INCLUDE_DIR}
+        ${CUDNN_FRONTEND_INCLUDE_DIR}
+    )
 
     # Third party links
     target_link_libraries(${EXAMPLE_NAME} PRIVATE fmt::fmt)
