@@ -1,6 +1,7 @@
 #include <cuda_fp8.h>
 #include <stdio.h>
 
+#if CUDA_VERSION >= 12080
 __global__ void convert_to_e8m0(float *in, __nv_fp8_storage_t *out) {
   const float input_val = in[0];
   printf("Device input value: %f\n", input_val);
@@ -54,3 +55,8 @@ int main() {
   cudaFree(d_out);
   return 0;
 }
+#else
+int main() {
+  return 0;
+}
+#endif
