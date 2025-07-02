@@ -53,7 +53,7 @@ foreach(EXAMPLE_SOURCE ${EXAMPLE_SOURCES})
 
     # CUDA properties provided by CMAKE
     set_target_properties(${EXAMPLE_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-    set_target_properties(${EXAMPLE_NAME} PROPERTIES CUDA_ARCHITECTURES 100)
+    set_target_properties(${EXAMPLE_NAME} PROPERTIES CUDA_ARCHITECTURES 100a)
 
     # Convert the flags string into a list of flags
     separate_arguments(EXTRA_CUDA_FLAGS_LIST UNIX_COMMAND "${EXTRA_CUDA_FLAGS}")
