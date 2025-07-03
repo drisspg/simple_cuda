@@ -2,7 +2,7 @@
 #include <iostream>
 #include <limits>
 
-__device__ __forceinline__ float atomicMaxFloatBAD(float *addr, float value) {
+__device__ __forceinline__ void atomicMaxFloatBAD(float *addr, float value) {
   // source: https://stackoverflow.com/a/51549250
    (value >= 0)
              ? __int_as_float(atomicMax((int *)addr, __float_as_int(value)))
