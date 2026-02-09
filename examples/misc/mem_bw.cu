@@ -37,7 +37,8 @@ int main() {
   std::fill_n(data, n, 1); // initialize data
 
   // Make sure data is on the device before timing
-  cudaMemPrefetchAsync(data, n * sizeof(float), 0);
+  cudaMemLocation host_location{cudaMemLocationTypeHost, 0};
+  cudaMemPrefetchAsync(data, n * sizeof(float), host_location, 0, 0);
   cudaDeviceSynchronize();
 
   direct_copy_optimized<<<nBlocks_manual, blockSize>>>(reinterpret_cast<float4*>(output), reinterpret_cast<float4*>(data), n);

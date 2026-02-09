@@ -9,6 +9,7 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
+#include <cstdint>
 
 // FP4 E2M1 lookup table
 const float fp4_e2m1_lut[16] = {

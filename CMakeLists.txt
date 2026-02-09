@@ -42,6 +42,16 @@ option (SHOW_PTXAS_INFO "Show ptxas info" OFF)
 if(SHOW_PTXAS_INFO)
     set(EXTRA_CUDA_FLAGS "${EXTRA_CUDA_FLAGS} -Xptxas -v")
 endif()
+
+set(SIMPLE_CUDA_ARCH "121" CACHE STRING "CUDA architecture (e.g. 121, 100a)")
+set(SIMPLE_CUDA_SKIP_EXAMPLES "" CACHE STRING "Semicolon-separated example target names to skip")
+set(SIMPLE_CUDA_AUTO_SKIP_UNSUPPORTED_EXAMPLES ON CACHE BOOL "Auto-skip examples unsupported on selected architecture")
+
+set(EFFECTIVE_SKIP_EXAMPLES ${SIMPLE_CUDA_SKIP_EXAMPLES})
+if(SIMPLE_CUDA_AUTO_SKIP_UNSUPPORTED_EXAMPLES AND SIMPLE_CUDA_ARCH MATCHES "(^|;)121($|;)")
+    list(APPEND EFFECTIVE_SKIP_EXAMPLES stochastic test_nvfp4_rounding)
+endif()
+list(REMOVE_DUPLICATES EFFECTIVE_SKIP_EXAMPLES)
 # Set the output directory for the binaries
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
@@ -49,11 +59,17 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 file(GLOB_RECURSE EXAMPLE_SOURCES examples/*.cu)
 foreach(EXAMPLE_SOURCE ${EXAMPLE_SOURCES})
     get_filename_component(EXAMPLE_NAME ${EXAMPLE_SOURCE} NAME_WE)
+    list(FIND EFFECTIVE_SKIP_EXAMPLES ${EXAMPLE_NAME} SKIP_EXAMPLE_INDEX)
+    if(NOT SKIP_EXAMPLE_INDEX EQUAL -1)
+        message(STATUS "Skipping example ${EXAMPLE_NAME}")
+        continue()
+    endif()
+
     add_executable(${EXAMPLE_NAME} ${EXAMPLE_SOURCE})
 
     # CUDA properties provided by CMAKE
     set_target_properties(${EXAMPLE_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-    set_target_properties(${EXAMPLE_NAME} PROPERTIES CUDA_ARCHITECTURES 100a)
+    set_target_properties(${EXAMPLE_NAME} PROPERTIES CUDA_ARCHITECTURES ${SIMPLE_CUDA_ARCH})
 
     # Convert the flags string into a list of flags
     separate_arguments(EXTRA_CUDA_FLAGS_LIST UNIX_COMMAND "${EXTRA_CUDA_FLAGS}")
