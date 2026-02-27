@@ -1,7 +1,9 @@
 #include <algorithm>
+#include <cstdlib>
 #include <functional>
 #include <random>
-#include <stdio.h>
+#include <cstdio>
+#include <cuda_runtime.h>
 #include <thrust/generate.h>
 
 namespace simple_cuda {
@@ -18,6 +20,14 @@ namespace simple_cuda {
     }                                                                          \
   } while (0)
 
+inline void check_cuda(cudaError_t status, const char* expression, const char* file, int line) {
+  if (status == cudaSuccess) {
+    return;
+  }
+  std::fprintf(stderr, "CUDA error: %s from %s at %s:%d\n", cudaGetErrorString(status), expression, file, line);
+  std::exit(1);
+}
+#define CUDA_TRY(expr) ::simple_cuda::check_cuda((expr), #expr, __FILE__, __LINE__)
 template <typename T, typename Y> T __host__ __device__ ceil_div(T a, Y b) {
   return a / b + (a % b != 0);
 }
