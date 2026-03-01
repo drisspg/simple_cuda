@@ -8,6 +8,7 @@ __global__ void direct_copy_optimized(float4 *output,
                                       size_t vec_n) {
   const size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
   const size_t stride = blockDim.x * gridDim.x;
+  #pragma unroll
   for (size_t i = tid; i < vec_n; i += stride) {
     output[i] = input[i];
   }
